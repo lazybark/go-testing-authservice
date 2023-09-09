@@ -8,6 +8,8 @@ import (
 )
 
 func TestGenerateRandomStringFromSet(t *testing.T) {
+	t.Parallel()
+
 	var s string
 	var last string
 
