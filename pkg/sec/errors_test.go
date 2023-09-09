@@ -7,6 +7,8 @@ import (
 )
 
 func TestSecurityError(t *testing.T) {
+	t.Parallel()
+
 	assert.Equal(t, string(ErrBadToken), ErrBadToken.Error())
 	assert.ErrorAs(t, ErrBadToken, new(SecurityError))
 

@@ -129,11 +129,7 @@ func ParseToken(token, jwtSecret string) (*jwt.Token, *AuthClaims, error) {
 		return []byte(jwtSecret), nil
 	})
 	if err != nil {
-		if errors.Is(err, jwt.ErrSignatureInvalid) {
-			return nil, nil, ErrBadToken
-		}
-
-		return nil, nil, err
+		return nil, nil, ErrBadToken
 	}
 
 	return tkn, claims, err
@@ -147,11 +143,7 @@ func ParseRefreshToken(token, jwtSecret string) (*jwt.Token, *RefreshClaims, err
 		return []byte(jwtSecret), nil
 	})
 	if err != nil {
-		if errors.Is(err, jwt.ErrSignatureInvalid) {
-			return nil, nil, ErrBadToken
-		}
-
-		return nil, nil, err
+		return nil, nil, ErrBadToken
 	}
 
 	return tkn, claims, err
@@ -162,11 +154,7 @@ func ParseRefreshToken(token, jwtSecret string) (*jwt.Token, *RefreshClaims, err
 func CheckToken(token, jwtSecret string) (bool, error) {
 	tkn, _, err := ParseToken(token, jwtSecret)
 	if err != nil {
-		if errors.Is(err, jwt.ErrSignatureInvalid) || errors.Is(err, ErrBadToken) {
-			return false, ErrBadToken
-		}
-
-		return false, fmt.Errorf("[CheckToken] %w", err)
+		return false, ErrBadToken
 	}
 	if !tkn.Valid {
 		return false, nil

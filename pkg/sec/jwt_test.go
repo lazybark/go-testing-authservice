@@ -31,6 +31,8 @@ func assertTokenEqual(
 }
 
 func TestStringifyToken(t *testing.T) {
+	t.Parallel()
+
 	uid := helpers.GenerateRandomStringFromSet(15, []byte(helpers.DigitsAndEnglish))
 	sid := helpers.GenerateRandomStringFromSet(15, []byte(helpers.DigitsAndEnglish))
 	name := helpers.GenerateRandomStringFromSet(15, []byte(helpers.DigitsAndEnglish))
@@ -66,6 +68,8 @@ func TestStringifyToken(t *testing.T) {
 }
 
 func TestCheckToken(t *testing.T) {
+	t.Parallel()
+
 	uid := helpers.GenerateRandomStringFromSet(15, []byte(helpers.DigitsAndEnglish))
 	sid := helpers.GenerateRandomStringFromSet(15, []byte(helpers.DigitsAndEnglish))
 	name := helpers.GenerateRandomStringFromSet(15, []byte(helpers.DigitsAndEnglish))
@@ -104,6 +108,8 @@ func TestCheckToken(t *testing.T) {
 }
 
 func TestParseRefreshToken(t *testing.T) {
+	t.Parallel()
+
 	uid := helpers.GenerateRandomStringFromSet(15, []byte(helpers.DigitsAndEnglish))
 	sid := helpers.GenerateRandomStringFromSet(15, []byte(helpers.DigitsAndEnglish))
 	name := helpers.GenerateRandomStringFromSet(15, []byte(helpers.DigitsAndEnglish))
@@ -128,6 +134,8 @@ func TestParseRefreshToken(t *testing.T) {
 }
 
 func TestParseToken(t *testing.T) {
+	t.Parallel()
+
 	uid := helpers.GenerateRandomStringFromSet(15, []byte(helpers.DigitsAndEnglish))
 	sid := helpers.GenerateRandomStringFromSet(15, []byte(helpers.DigitsAndEnglish))
 	name := helpers.GenerateRandomStringFromSet(15, []byte(helpers.DigitsAndEnglish))

@@ -35,18 +35,24 @@ func TestHashPassword(t *testing.T) {
 	}
 
 	for name, tCase := range tests {
-		hash, err := HashPasswordString(tCase.pwd, tCase.cost)
-		if tCase.errRequired != nil {
-			require.Error(t, err)
-			assert.True(t, errors.Is(err, tCase.errRequired), name)
-		} else {
-			require.NoError(t, err, fmt.Errorf("[%s] hashing error", name))
+		t.Run(name, func(t *testing.T) {
+			tCase := tCase
+			name := name
 
-			assert.Greater(t, len(hash), 0, name)
-			assert.NotEqual(t, len(hash), len(tCase.pwd), name)
-			assert.NotEqual(t, hash, tCase.pwd, name)
-		}
+			t.Parallel()
 
+			hash, err := HashPasswordString(tCase.pwd, tCase.cost)
+			if tCase.errRequired != nil {
+				require.Error(t, err)
+				assert.True(t, errors.Is(err, tCase.errRequired), name)
+			} else {
+				require.NoError(t, err, fmt.Errorf("[%s] hashing error", name))
+
+				assert.Greater(t, len(hash), 0, name)
+				assert.NotEqual(t, len(hash), len(tCase.pwd), name)
+				assert.NotEqual(t, hash, tCase.pwd, name)
+			}
+		})
 	}
 }
 
@@ -68,16 +74,23 @@ func TestComparePasswords(t *testing.T) {
 	}
 
 	for name, tCase := range tests {
-		hash, err := HashPasswordString(tCase.pwd, tCase.cost)
-		require.NoError(t, err, fmt.Errorf("[%s] hashing error", name))
+		t.Run(name, func(t *testing.T) {
+			tCase := tCase
+			name := name
 
-		yes, err := ComparePasswordStrings(hash, tCase.pwd)
-		require.NoError(t, err, fmt.Errorf("[%s] comparing error", name))
-		assert.True(t, yes)
+			t.Parallel()
 
-		no, err := ComparePasswordStrings(hash, tCase.pwd+"extra")
-		require.NoError(t, err, fmt.Errorf("[%s] comparing error", name))
-		assert.False(t, no)
+			hash, err := HashPasswordString(tCase.pwd, tCase.cost)
+			require.NoError(t, err, fmt.Errorf("[%s] hashing error", name))
+
+			yes, err := ComparePasswordStrings(hash, tCase.pwd)
+			require.NoError(t, err, fmt.Errorf("[%s] comparing error", name))
+			assert.True(t, yes)
+
+			no, err := ComparePasswordStrings(hash, tCase.pwd+"extra")
+			require.NoError(t, err, fmt.Errorf("[%s] comparing error", name))
+			assert.False(t, no)
+		})
 	}
 
 	no, err := ComparePasswordStrings("", "")
