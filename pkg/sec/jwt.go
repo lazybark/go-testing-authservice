@@ -8,6 +8,10 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
+var parseWithClaims = jwt.ParseWithClaims
+var signedString = (*jwt.Token).SignedString
+var newWithClaims = jwt.NewWithClaims
+
 // AuthClaims struct has all info about user session.
 type AuthClaims struct {
 	UserID    string
@@ -31,7 +35,7 @@ type Token struct {
 }
 
 func StringifyToken(t *jwt.Token, jwtSecret string) (string, error) {
-	tokenString, err := t.SignedString([]byte(jwtSecret))
+	tokenString, err := signedString(t, []byte(jwtSecret))
 	if err != nil {
 		return "", fmt.Errorf("[StringifyToken] %w", err)
 	}
@@ -55,7 +59,7 @@ func FormAuthToken(uid, sid, uname, email, jwtSecret string, t time.Time) (strin
 		},
 	}
 
-	authToken := jwt.NewWithClaims(jwt.SigningMethodHS256, authClaims)
+	authToken := newWithClaims(jwt.SigningMethodHS256, authClaims)
 	authTokenString, err := StringifyToken(authToken, jwtSecret)
 	if err != nil {
 		return "", fmt.Errorf("[FormAuthToken] %w", err)
@@ -82,7 +86,7 @@ func FormRefreshToken(uid, sid, uname, email, jwtSecret string, t time.Time) (st
 			},
 		},
 	}
-	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
+	refreshToken := newWithClaims(jwt.SigningMethodHS256, refreshClaims)
 	refreshTokenString, err := StringifyToken(refreshToken, jwtSecret)
 	if err != nil {
 		return "", fmt.Errorf("[FormRefreshToken] %w", err)
@@ -125,7 +129,7 @@ func FormJWT(uid, sid, uname, email, jwtSecret string) (*Token, error) {
 func ParseToken(token, jwtSecret string) (*jwt.Token, *AuthClaims, error) {
 	claims := &AuthClaims{}
 
-	tkn, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
+	tkn, err := parseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(jwtSecret), nil
 	})
 	if err != nil {
@@ -139,7 +143,7 @@ func ParseToken(token, jwtSecret string) (*jwt.Token, *AuthClaims, error) {
 func ParseRefreshToken(token, jwtSecret string) (*jwt.Token, *RefreshClaims, error) {
 	claims := &RefreshClaims{}
 
-	tkn, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
+	tkn, err := parseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(jwtSecret), nil
 	})
 	if err != nil {

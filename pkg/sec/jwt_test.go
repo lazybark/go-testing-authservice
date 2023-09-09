@@ -1,14 +1,20 @@
 package sec
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/lazybark/go-testing-authservice/pkg/ds"
 	"github.com/lazybark/go-testing-authservice/pkg/helpers"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+/*
+There will be no parallel tests, because we're switching function values on package level.
+*/
 
 var (
 	testSecret = "testSecret"
@@ -31,8 +37,6 @@ func assertTokenEqual(
 }
 
 func TestStringifyToken(t *testing.T) {
-	t.Parallel()
-
 	uid := helpers.GenerateRandomStringFromSet(15, []byte(helpers.DigitsAndEnglish))
 	sid := helpers.GenerateRandomStringFromSet(15, []byte(helpers.DigitsAndEnglish))
 	name := helpers.GenerateRandomStringFromSet(15, []byte(helpers.DigitsAndEnglish))
@@ -65,6 +69,20 @@ func TestStringifyToken(t *testing.T) {
 		_, _ = StringifyToken(nil, testSecret)
 	}
 	require.Panics(t, fn)
+
+	t.Run("signedString => error", func(t *testing.T) {
+		orig := signedString
+		t.Cleanup(func() {
+			signedString = orig
+		})
+
+		signedString = func(t *jwt.Token, key interface{}) (string, error) {
+			return "", fmt.Errorf("some_error")
+		}
+		token, err := StringifyToken(nil, testSecret)
+		require.Error(t, err)
+		assert.Empty(t, token)
+	})
 }
 
 func TestCheckToken(t *testing.T) {
@@ -105,11 +123,44 @@ func TestCheckToken(t *testing.T) {
 	ok, err = CheckToken(token2, testSecret)
 	require.ErrorIs(t, err, ErrBadToken)
 	assert.False(t, ok)
+
+	// Must NOT run in parallel
+	t.Run(name, func(t *testing.T) {
+		orig := parseWithClaims
+		t.Cleanup(func() {
+			parseWithClaims = orig
+		})
+
+		parseWithClaims = func(
+			tokenString string,
+			claims jwt.Claims,
+			keyFunc jwt.Keyfunc,
+			options ...jwt.ParserOption,
+		) (*jwt.Token, error) {
+			return &jwt.Token{Valid: false}, fmt.Errorf("some_error")
+		}
+
+		ok, err = CheckToken(token2, testSecret)
+		require.Error(t, err)
+		assert.False(t, ok)
+
+		parseWithClaims = func(
+			tokenString string,
+			claims jwt.Claims,
+			keyFunc jwt.Keyfunc,
+			options ...jwt.ParserOption,
+		) (*jwt.Token, error) {
+			return &jwt.Token{Valid: false}, nil
+		}
+
+		ok, err = CheckToken(token2, testSecret)
+		require.Nil(t, err)
+		assert.False(t, ok)
+
+	})
 }
 
 func TestParseRefreshToken(t *testing.T) {
-	t.Parallel()
-
 	uid := helpers.GenerateRandomStringFromSet(15, []byte(helpers.DigitsAndEnglish))
 	sid := helpers.GenerateRandomStringFromSet(15, []byte(helpers.DigitsAndEnglish))
 	name := helpers.GenerateRandomStringFromSet(15, []byte(helpers.DigitsAndEnglish))
@@ -131,11 +182,28 @@ func TestParseRefreshToken(t *testing.T) {
 	assert.True(t, claims.IsRefreshToken)
 
 	assertTokenEqual(t, uid, sid, name, email, now, &claims.AuthClaims)
+
+	t.Run("parseWithClaims => error", func(t *testing.T) {
+		orig := parseWithClaims
+		t.Cleanup(func() {
+			parseWithClaims = orig
+		})
+
+		parseWithClaims = func(
+			tokenString string,
+			claims jwt.Claims,
+			keyFunc jwt.Keyfunc,
+			options ...jwt.ParserOption,
+		) (*jwt.Token, error) {
+			return &jwt.Token{Valid: false}, fmt.Errorf("some_error")
+		}
+
+		_, _, err = ParseRefreshToken(token1, testSecret)
+		require.Error(t, err)
+	})
 }
 
 func TestParseToken(t *testing.T) {
-	t.Parallel()
-
 	uid := helpers.GenerateRandomStringFromSet(15, []byte(helpers.DigitsAndEnglish))
 	sid := helpers.GenerateRandomStringFromSet(15, []byte(helpers.DigitsAndEnglish))
 	name := helpers.GenerateRandomStringFromSet(15, []byte(helpers.DigitsAndEnglish))
@@ -156,4 +224,37 @@ func TestParseToken(t *testing.T) {
 	require.NoError(t, err)
 
 	assertTokenEqual(t, uid, sid, name, email, now, claims)
+}
+
+func TestFormJWT(t *testing.T) {
+	udata := ds.GetRandomUserData(t)
+
+	jwtSecret := "jwtSecret"
+
+	token, err := FormJWT(udata.UserID, "session_id", udata.FirstName, udata.Email, jwtSecret)
+	require.NoError(t, err)
+
+	ok, err := CheckToken(token.AuthToken, jwtSecret)
+	require.NoError(t, err)
+	assert.Equal(t, true, ok)
+
+	ok, err = CheckToken(token.RefreshToken, jwtSecret)
+	require.NoError(t, err)
+	assert.Equal(t, true, ok)
+
+	t.Run("newWithClaims => nil", func(t *testing.T) {
+		orig := newWithClaims
+		t.Cleanup(func() {
+			newWithClaims = orig
+		})
+
+		newWithClaims = func(method jwt.SigningMethod, claims jwt.Claims) *jwt.Token {
+			return nil
+		}
+
+		require.Panics(t, func() {
+			_, _ = FormJWT(udata.UserID, "session_id", udata.FirstName, udata.Email, jwtSecret)
+		})
+
+	})
 }
