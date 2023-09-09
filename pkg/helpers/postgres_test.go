@@ -2,10 +2,12 @@ package helpers
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go"
 )
 
 func TestNewTestContainerDatabase(t *testing.T) {
@@ -22,4 +24,21 @@ func TestNewTestContainerDatabase(t *testing.T) {
 
 	err = dbContainer.Terminate(ctx)
 	require.NoError(t, err)
+
+	// Must NOT run in parallel
+	t.Run("genericContainer error", func(t *testing.T) {
+		orig := genericContainer
+		t.Cleanup(func() {
+			genericContainer = orig
+		})
+
+		genericContainer = func(ctx context.Context, req testcontainers.GenericContainerRequest) (testcontainers.Container, error) {
+			return nil, fmt.Errorf("some_error")
+		}
+
+		dbContainer, dsn, err := NewTestContainerDatabase(ctx)
+		require.Error(t, err)
+		assert.Empty(t, dsn)
+		assert.Nil(t, dbContainer)
+	})
 }

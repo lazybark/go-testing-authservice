@@ -8,6 +8,8 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+var genericContainer = testcontainers.GenericContainer
+
 func NewTestContainerDatabase(ctx context.Context) (testcontainers.Container, string, error) {
 	uid := "postgres"
 	pwd := "postgres"
@@ -23,7 +25,7 @@ func NewTestContainerDatabase(ctx context.Context) (testcontainers.Container, st
 		},
 		WaitingFor: wait.ForListeningPort("5432/tcp"),
 	}
-	postgres, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+	postgres, err := genericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req1,
 		Started:          true,
 	})

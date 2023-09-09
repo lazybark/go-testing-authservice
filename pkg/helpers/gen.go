@@ -6,6 +6,8 @@ import (
 )
 
 var (
+	randInt = rand.Int
+
 	DigitsAndEnglish = []byte(`0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz`)
 	DigitsAndSwedish = []byte(`0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖabcdefghijklmnopqrstuvwxyzåäö`)
 	DigitsAndGerman  = []byte(`0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜẞabcdefghijklmnopqrstuvwxyzäöüß`)
@@ -16,7 +18,7 @@ var (
 func GenerateRandomStringFromSet(n int, charSet []byte) string {
 	ret := make([]byte, n)
 	for i := 0; i < n; i++ {
-		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(charSet))))
+		num, err := randInt(rand.Reader, big.NewInt(int64(len(charSet))))
 		if err != nil {
 			return "" // Used only in tests
 		}
