@@ -12,7 +12,12 @@ DB: PgSQL
 
 `make TEST`: run tests (current coverage ~93.2% overall). Docker is required to run DB tests.
 
-Keys: `-m` (bool) to launch DB migration (safe to run over migrated DB), `-s` (string) to set JWT-token sign key (required), `--udsn` to set PgSQL DSN (if not provided, new Docker container will be launched - the Docker itself is required in the system).
+Keys: 
+* `-m` (bool): to launch DB migration (safe to run over migrated DB)
+* `-s` (string): to set JWT-token sign key (required)
+* `--udsn`(string): set PgSQL DSN (if not provided, new Docker container will be launched - the Docker itself is required in the system)
+* `-h` (string): listen for HTTP requests at (def: `localhost:8080`)
+* `-g` (string): listen for RPC requests at (def: `localhost:9090`)
 
 ## Endpoints
 
