@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+option go_package = "github.com/lazybark/go-testing-authservice";
+
+package testuserapi;
+
+// User worker service
+service UserWorker {
+  rpc RegisterUser (RegisterUserRequest) returns (GeneralReply) {}
+  rpc Login (LoginRequest) returns (AuthTokenReply) {}
+  rpc CheckToken (TokenRequest) returns (GeneralReply) {}
+  rpc RefreshToken (TokenRequest) returns (AuthTokenReply) {}
+}
+
+message RegisterUserRequest {
+  string login = 1;
+  string password = 2;
+  string first_name = 3;
+  string last_name = 4;
+  string email = 5;
+}
+
+message GeneralReply {
+  bool success = 1;
+  int32 status = 2;
+  string response = 3;
+}
+
+message LoginRequest {
+  string login = 1;
+  string password = 2;
+}
+
+message AuthTokenReply {
+  message AuthToken {
+    string auth_token = 1;
+    string refresh_token = 2;
+  }
+  bool success = 1;
+  int32 status = 2;
+  string response = 3;
+  AuthToken auth_token = 4;
+}
+
+message CheckTokenRequest {
+  string token = 1;
+}
+
+message TokenRequest {
+  string token = 1;
+}
