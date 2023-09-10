@@ -224,7 +224,7 @@ func TestParseToken(t *testing.T) {
 }
 
 func TestFormJWT(t *testing.T) {
-	udata := ds.GetRandomUserData(t)
+	udata := ds.GetRandomUserData()
 	jwtSecret := "jwtSecret"
 
 	token, err := FormJWT(udata.UserID, "session_id", udata.FirstName, udata.Email, jwtSecret)
