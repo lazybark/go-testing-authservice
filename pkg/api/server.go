@@ -18,6 +18,7 @@ import (
 	"google.golang.org/grpc"
 )
 
+// Server runs HTTP & gRPC servers and handles the responses.
 type Server struct {
 	httpListenAt string
 	http         *http.Server
@@ -25,11 +26,10 @@ type Server struct {
 	grpc         *grpc.Server
 	pb.UnimplementedUserWorkerServer
 
-	//lgr       ServerLogger
 	jwtSecret      string
 	maxWrongLogins int
-	ds             ds.UserWorker
-	dbContainer    testcontainers.Container
+	ds             ds.UserWorker            // Datastorage for user actions
+	dbContainer    testcontainers.Container // Database container (if any was launched)
 
 	muActive *sync.Mutex
 	isActive bool
@@ -37,6 +37,7 @@ type Server struct {
 	closeChan chan (bool)
 }
 
+// NewServer reutrns new API server.
 func NewServer(conf cfg.Config) (*Server, error) {
 	s := &Server{
 		httpListenAt:   conf.HTTPListenAt,
@@ -84,6 +85,7 @@ func NewServer(conf cfg.Config) (*Server, error) {
 	return s, nil
 }
 
+// Listen starts HTTP & gRPC servers. Must not be called twice without Stop() before the second one.
 func (s *Server) Listen() error {
 	log.Print("Starting server")
 
@@ -150,6 +152,7 @@ func (s *Server) Listen() error {
 	return nil
 }
 
+// Stop stops HTTP, gRPC and SQL (if any) servers.
 func (s *Server) Stop() error {
 	s.muActive.Lock()
 	defer s.muActive.Unlock()
