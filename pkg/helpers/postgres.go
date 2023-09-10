@@ -8,7 +8,10 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-var genericContainer = testcontainers.GenericContainer
+var (
+	genericContainer = testcontainers.GenericContainer
+	mappedPort       = (testcontainers.Container).MappedPort
+)
 
 func NewTestContainerDatabase(ctx context.Context) (testcontainers.Container, string, error) {
 	uid := "postgres"
@@ -33,7 +36,7 @@ func NewTestContainerDatabase(ctx context.Context) (testcontainers.Container, st
 		return nil, "", fmt.Errorf("[NewTestContainerDatabase] %w", err)
 	}
 
-	p, err := postgres.MappedPort(ctx, "5432")
+	p, err := mappedPort(postgres, ctx, "5432")
 	if err != nil {
 		return nil, "", fmt.Errorf("[NewTestContainerDatabase] %w", err)
 	}

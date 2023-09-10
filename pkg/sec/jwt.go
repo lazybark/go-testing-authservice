@@ -8,9 +8,19 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-var parseWithClaims = jwt.ParseWithClaims
-var signedString = (*jwt.Token).SignedString
-var newWithClaims = jwt.NewWithClaims
+const (
+	AuthServerName = "test.test.com"
+	AuthServerRole = "auth server"
+)
+
+var (
+	parseWithClaims  = jwt.ParseWithClaims
+	signedString     = (*jwt.Token).SignedString
+	newWithClaims    = jwt.NewWithClaims
+	stringifyToken   = StringifyToken
+	formAuthToken    = FormAuthToken
+	formRefreshToken = FormRefreshToken
+)
 
 // AuthClaims struct has all info about user session.
 type AuthClaims struct {
@@ -34,6 +44,7 @@ type Token struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
+// StringifyToken returns hashed string out of t.
 func StringifyToken(t *jwt.Token, jwtSecret string) (string, error) {
 	tokenString, err := signedString(t, []byte(jwtSecret))
 	if err != nil {
@@ -50,17 +61,16 @@ func FormAuthToken(uid, sid, uname, email, jwtSecret string, t time.Time) (strin
 		SessionID: sid,
 		Email:     email,
 		Name:      uname,
-		// Just harcoding
 		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer:    "test.test.com",
-			Subject:   "auth server",
+			Issuer:    AuthServerName,
+			Subject:   AuthServerRole,
 			IssuedAt:  jwt.NewNumericDate(t),
 			ExpiresAt: jwt.NewNumericDate(t.Add(time.Minute * 120)),
 		},
 	}
 
 	authToken := newWithClaims(jwt.SigningMethodHS256, authClaims)
-	authTokenString, err := StringifyToken(authToken, jwtSecret)
+	authTokenString, err := stringifyToken(authToken, jwtSecret)
 	if err != nil {
 		return "", fmt.Errorf("[FormAuthToken] %w", err)
 	}
@@ -77,17 +87,16 @@ func FormRefreshToken(uid, sid, uname, email, jwtSecret string, t time.Time) (st
 			SessionID: sid,
 			Email:     email,
 			Name:      uname,
-			// Just harcoding
 			RegisteredClaims: jwt.RegisteredClaims{
-				Issuer:    "test.test.com",
-				Subject:   "auth server",
+				Issuer:    AuthServerName,
+				Subject:   AuthServerRole,
 				IssuedAt:  jwt.NewNumericDate(t),
 				ExpiresAt: jwt.NewNumericDate(t.Add(time.Hour * 24 * 30)),
 			},
 		},
 	}
 	refreshToken := newWithClaims(jwt.SigningMethodHS256, refreshClaims)
-	refreshTokenString, err := StringifyToken(refreshToken, jwtSecret)
+	refreshTokenString, err := stringifyToken(refreshToken, jwtSecret)
 	if err != nil {
 		return "", fmt.Errorf("[FormRefreshToken] %w", err)
 	}
@@ -99,7 +108,7 @@ func FormRefreshToken(uid, sid, uname, email, jwtSecret string, t time.Time) (st
 func FormJWT(uid, sid, uname, email, jwtSecret string) (*Token, error) {
 	t := time.Now()
 
-	authTokenString, err := FormAuthToken(uid, sid, uname, email, jwtSecret, t)
+	authTokenString, err := formAuthToken(uid, sid, uname, email, jwtSecret, t)
 	if err != nil {
 		if errors.Is(err, jwt.ErrSignatureInvalid) || errors.Is(err, ErrBadToken) {
 			return nil, ErrBadToken
@@ -108,9 +117,9 @@ func FormJWT(uid, sid, uname, email, jwtSecret string) (*Token, error) {
 		return nil, fmt.Errorf("[FormJWT]%w", err)
 	}
 
-	refreshTokenString, err := FormRefreshToken(uid, sid, uname, email, jwtSecret, t)
+	refreshTokenString, err := formRefreshToken(uid, sid, uname, email, jwtSecret, t)
 	if err != nil {
-		if errors.Is(err, jwt.ErrSignatureInvalid) {
+		if errors.Is(err, jwt.ErrSignatureInvalid) || errors.Is(err, ErrBadToken) {
 			return nil, ErrBadToken
 		}
 

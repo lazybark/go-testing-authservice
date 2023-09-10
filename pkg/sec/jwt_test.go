@@ -13,7 +13,8 @@ import (
 )
 
 /*
-There will be no parallel tests, because we're switching function values on package level.
+There will be no parallel tests, because we're switching function values on package level
+and it can kill other tests.
 */
 
 var (
@@ -48,10 +49,9 @@ func TestStringifyToken(t *testing.T) {
 		SessionID: sid,
 		Email:     email,
 		Name:      name,
-		// Just harcoding
 		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer:    "test.test.com",
-			Subject:   "auth server",
+			Issuer:    AuthServerName,
+			Subject:   AuthServerRole,
 			IssuedAt:  jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(now.Add(time.Minute * 120)),
 		},
@@ -86,8 +86,6 @@ func TestStringifyToken(t *testing.T) {
 }
 
 func TestCheckToken(t *testing.T) {
-	t.Parallel()
-
 	uid := helpers.GenerateRandomStringFromSet(15, []byte(helpers.DigitsAndEnglish))
 	sid := helpers.GenerateRandomStringFromSet(15, []byte(helpers.DigitsAndEnglish))
 	name := helpers.GenerateRandomStringFromSet(15, []byte(helpers.DigitsAndEnglish))
@@ -124,8 +122,7 @@ func TestCheckToken(t *testing.T) {
 	require.ErrorIs(t, err, ErrBadToken)
 	assert.False(t, ok)
 
-	// Must NOT run in parallel
-	t.Run(name, func(t *testing.T) {
+	t.Run("parseWithClaims => error", func(t *testing.T) {
 		orig := parseWithClaims
 		t.Cleanup(func() {
 			parseWithClaims = orig
@@ -228,7 +225,6 @@ func TestParseToken(t *testing.T) {
 
 func TestFormJWT(t *testing.T) {
 	udata := ds.GetRandomUserData(t)
-
 	jwtSecret := "jwtSecret"
 
 	token, err := FormJWT(udata.UserID, "session_id", udata.FirstName, udata.Email, jwtSecret)
@@ -242,6 +238,7 @@ func TestFormJWT(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, true, ok)
 
+	// Must NOT run in parallel
 	t.Run("newWithClaims => nil", func(t *testing.T) {
 		orig := newWithClaims
 		t.Cleanup(func() {
@@ -256,5 +253,87 @@ func TestFormJWT(t *testing.T) {
 			_, _ = FormJWT(udata.UserID, "session_id", udata.FirstName, udata.Email, jwtSecret)
 		})
 
+	})
+
+	// Must NOT run in parallel
+	t.Run("stringifyToken => error", func(t *testing.T) {
+		orig := stringifyToken
+		t.Cleanup(func() {
+			stringifyToken = orig
+		})
+
+		stringifyToken = func(t *jwt.Token, jwtSecret string) (string, error) {
+			return "", fmt.Errorf("some_error")
+		}
+
+		authTokenString, err := FormAuthToken(udata.UserID, "session_id", udata.FirstName, udata.Email, jwtSecret, time.Now())
+		require.Error(t, err)
+		assert.Empty(t, authTokenString)
+
+		refrTokenString, err := FormRefreshToken(udata.UserID, "session_id", udata.FirstName, udata.Email, jwtSecret, time.Now())
+		require.Error(t, err)
+		assert.Empty(t, refrTokenString)
+	})
+
+	// Must NOT run in parallel
+	t.Run("formAuthToken => error", func(t *testing.T) {
+		orig := formAuthToken
+		t.Cleanup(func() {
+			formAuthToken = orig
+		})
+
+		formAuthToken = func(uid string, sid string, uname string, email string, jwtSecret string, t time.Time) (string, error) {
+			return "", fmt.Errorf("some_error")
+		}
+		token, err := FormJWT(udata.UserID, "session_id", udata.FirstName, udata.Email, jwtSecret)
+		require.Error(t, err)
+		assert.Nil(t, token)
+
+		formAuthToken = func(uid string, sid string, uname string, email string, jwtSecret string, t time.Time) (string, error) {
+			return "", jwt.ErrSignatureInvalid
+		}
+		token, err = FormJWT(udata.UserID, "session_id", udata.FirstName, udata.Email, jwtSecret)
+		require.Error(t, err)
+		assert.ErrorIs(t, err, ErrBadToken)
+		assert.Nil(t, token)
+
+		formAuthToken = func(uid string, sid string, uname string, email string, jwtSecret string, t time.Time) (string, error) {
+			return "", ErrBadToken
+		}
+		token, err = FormJWT(udata.UserID, "session_id", udata.FirstName, udata.Email, jwtSecret)
+		require.Error(t, err)
+		assert.ErrorIs(t, err, ErrBadToken)
+		assert.Nil(t, token)
+	})
+
+	// Must NOT run in parallel
+	t.Run("formRefreshToken => error", func(t *testing.T) {
+		orig := formRefreshToken
+		t.Cleanup(func() {
+			formRefreshToken = orig
+		})
+
+		formRefreshToken = func(uid string, sid string, uname string, email string, jwtSecret string, t time.Time) (string, error) {
+			return "", fmt.Errorf("some_error")
+		}
+		token, err := FormJWT(udata.UserID, "session_id", udata.FirstName, udata.Email, jwtSecret)
+		require.Error(t, err)
+		assert.Nil(t, token)
+
+		formRefreshToken = func(uid string, sid string, uname string, email string, jwtSecret string, t time.Time) (string, error) {
+			return "", jwt.ErrSignatureInvalid
+		}
+		token, err = FormJWT(udata.UserID, "session_id", udata.FirstName, udata.Email, jwtSecret)
+		require.Error(t, err)
+		assert.ErrorIs(t, err, ErrBadToken)
+		assert.Nil(t, token)
+
+		formRefreshToken = func(uid string, sid string, uname string, email string, jwtSecret string, t time.Time) (string, error) {
+			return "", ErrBadToken
+		}
+		token, err = FormJWT(udata.UserID, "session_id", udata.FirstName, udata.Email, jwtSecret)
+		require.Error(t, err)
+		assert.ErrorIs(t, err, ErrBadToken)
+		assert.Nil(t, token)
 	})
 }
