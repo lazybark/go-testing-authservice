@@ -1,14 +1,18 @@
 # go-testing-authservice
 
-Many things i would've done in different way if it was real project ( for example: proper logger, more complicated user models and ORM).
+Many things i would've done in different way if it was real project (for example: proper logger, more complicated user models and ORM).
 
 Also, tests are little bit slow as i can't run them in parallel due to function name placeholders being replaced in some tests. Didn't had time to make more complicated structure: in real-world app it would be done in more flexible way.
 
-How it works:
+## How it works:
 
-`make` or `make RUN`: start service with 8080 HTTP and 9090 RPC.
+DB: PgSQL
 
-`make TEST`: run tests (current coverage ~93.2% overall).
+`make` or `make RUN`: start service with 8080 HTTP and 9090 RPC. All actions available on both servers.
+
+`make TEST`: run tests (current coverage ~93.2% overall). Docker is required to run DB tests.
+
+Keys: `-m` (bool) to launch DB migration (safe to run over migrated DB), `-s` (string) to set JWT-token sign key (required), `--udsn` to set PgSQL DSN (if not provided, new Docker container will be launched - the Docker itself is required in the system).
 
 ## Endpoints
 
@@ -16,7 +20,7 @@ How it works:
 
 ### Register user
 ```
-http://localhost:8080/api/users/register
+POST http://localhost:8080/api/users/register
 
 {
     "login":string,
@@ -28,7 +32,7 @@ http://localhost:8080/api/users/register
 ```
 ### Login
 ```
-http://localhost:8080/api/users/login
+POST http://localhost:8080/api/users/login
 {
     "login":"login1",
     "password":"password"
@@ -50,8 +54,8 @@ Returns:
 `auth_token` can not be used to refresh, only `refresh_token`
 
 ### Check token
-http://localhost:8080/api/users/check_token/{token}
 ```
+GET http://localhost:8080/api/users/check_token/{token}
 {
   "success":bool,
   "status":int,
@@ -59,9 +63,8 @@ http://localhost:8080/api/users/check_token/{token}
 }
 ```  
 ### Get new auth token
-http://localhost:8080/api/users/get_token
 ```
-http://localhost:8080/api/users/login
+POST http://localhost:8080/api/users/get_token
 {
     "token":string (should be only refresh token)
 }
